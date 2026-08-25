@@ -27,20 +27,30 @@ jobs:
           wget -q --show-progress -O project.zip "https://files.catbox.moe/qoxn35.zip"
           unzip -q project.zip -d extracted_project
 
-      - name: Auto Fix google-services.json & Update compileSdk to 35
+      - name: Auto Fix Headers, Case Sensitivity & Configs
         run: |
           APP_DIR=$(find extracted_project -name "build.gradle" | grep "/app" | head -n 1 | xargs dirname)
           if [ -n "$APP_DIR" ]; then
-            # Bikin dummy google-services.json jika hilang
             if [ ! -f "$APP_DIR/google-services.json" ]; then
               echo '{"project_info":{"project_number":"123456789","project_id":"dummy","storage_bucket":"dummy.appspot.com"},"client":[{"client_info":{"mobilesdk_app_id":"1:123456789:android:123456","android_client_info":{"package_name":"ro.alynsampmobile.launcher"}},"api_key":[{"current_key":"dummy"}]}]}' > "$APP_DIR/google-services.json"
             fi
-            # Ubah compileSdk dari 34 ke 35 otomatis
-            sed -i 's/compileSdk 34/compileSdk 35/g' "$APP_DIR/build.gradle"
-            sed -i 's/compileSdkVersion 34/compileSdkVersion 35/g' "$APP_DIR/build.gradle"
-            sed -i 's/compileSdk = 34/compileSdk = 35/g' "$APP_DIR/build.gradle"
-            sed -i 's/compileSdkVersion = 34/compileSdkVersion = 35/g' "$APP_DIR/build.gradle"
+            sed -i 's/compileSdk 34/compileSdk 35/g' "$APP_DIR/build.gradle" 2>/dev/null || true
+            sed -i 's/compileSdkVersion 34/compileSdkVersion 35/g' "$APP_DIR/build.gradle" 2>/dev/null || true
+            sed -i 's/compileSdk = 34/compileSdk = 35/g' "$APP_DIR/build.gradle" 2>/dev/null || true
+            sed -i 's/compileSdkVersion = 34/compileSdkVersion = 35/g' "$APP_DIR/build.gradle" 2>/dev/null || true
           fi
+
+          # Sinkronisasi nama file header (Encoding.h <-> encoding.h) & struktur folder include
+          find extracted_project -type f \( -iname "*.h" -o -iname "*.hpp" \) | while read -r file; do
+            dir=$(dirname "$file")
+            filename=$(basename "$file")
+            cap_name="$(tr '[:lower:]' '[:upper:]' <<< ${filename:0:1})${filename:1}"
+            
+            cp -n "$file" "$dir/$cap_name" 2>/dev/null || true
+            mkdir -p "$dir/include" 2>/dev/null || true
+            cp -n "$file" "$dir/include/$cap_name" 2>/dev/null || true
+            cp -n "$file" "$dir/include/$filename" 2>/dev/null || true
+          done
 
       - name: Build APK
         run: |
