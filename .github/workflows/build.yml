@@ -31,7 +31,6 @@ jobs:
         run: |
           APP_DIR=$(find extracted_project -name "build.gradle" | grep "/app" | head -n 1 | xargs dirname)
           if [ -n "$APP_DIR" ] && [ ! -f "$APP_DIR/google-services.json" ]; then
-            echo "Membuat dummy google-services.json..."
             cat <<EOF > "$APP_DIR/google-services.json"
             {
               "project_info": { "project_number": "123456789", "project_id": "dummy", "storage_bucket": "dummy.appspot.com" },
@@ -40,7 +39,7 @@ jobs:
 EOF
           fi
 
-      - name: Build APK
+      - name: Build APK (Debug Mode)
         run: |
           TARGET_DIR=$(find extracted_project -name "settings.gradle" | head -n 1 | xargs dirname)
           cd "$TARGET_DIR"
@@ -49,10 +48,10 @@ EOF
           gradle wrapper --gradle-version 8.10.2
           chmod +x gradlew
 
-          ./gradlew assembleRelease --stacktrace
+          ./gradlew assembleDebug --stacktrace
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: alyn_sampmobile-APK
-          path: "extracted_project/**/build/outputs/apk/release/*.apk"
+          path: "extracted_project/**/build/outputs/apk/debug/*.apk"
