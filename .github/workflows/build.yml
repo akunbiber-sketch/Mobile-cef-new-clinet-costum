@@ -29,17 +29,15 @@ jobs:
 
       - name: Build APK
         run: |
-          # Mencari lokasi spesifik settings.gradle (Root Folder)
           TARGET_DIR=$(find extracted_project -name "settings.gradle" | head -n 1 | xargs dirname)
           echo "Root project berada di: $TARGET_DIR"
           cd "$TARGET_DIR"
 
-          # Paksa buat wrapper versi 8.7 yang stabil untuk Android targetSdk 34
-          if [ ! -f "gradlew" ]; then
-            gradle wrapper --gradle-version 8.7
-          fi
-
+          # Hapus gradlew bawaan Windows dan buat ulang khusus versi Linux
+          rm -f gradlew gradlew.bat
+          gradle wrapper --gradle-version 8.7
           chmod +x gradlew
+
           ./gradlew assembleRelease --stacktrace
 
       - name: Upload APK Artifact
