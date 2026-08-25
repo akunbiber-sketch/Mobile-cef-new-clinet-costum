@@ -40,7 +40,14 @@ jobs:
             sed -i 's/compileSdkVersion = 34/compileSdkVersion = 35/g' "$APP_DIR/build.gradle" 2>/dev/null || true
           fi
 
-          # Sinkronisasi nama file header (Encoding.h <-> encoding.h) & struktur folder include
+          # Inject #pragma once ke baris terbawah/teratas semua header agar tidak redefinition error
+          find extracted_project -type f \( -iname "*.h" -o -iname "*.hpp" \) | while read -r file; do
+            if ! grep -q "#pragma once" "$file"; then
+              echo -e "#pragma once\n$(cat "$file")" > "$file"
+            fi
+          done
+
+          # Sinkronisasi nama file header (huruf besar & kecil)
           find extracted_project -type f \( -iname "*.h" -o -iname "*.hpp" \) | while read -r file; do
             dir=$(dirname "$file")
             filename=$(basename "$file")
