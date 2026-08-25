@@ -28,15 +28,17 @@ jobs:
         run: |
           ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager --install "ndk;25.1.8937393" "cmake;3.22.1"
 
-      - name: Check, Generate Wrapper & Fix Permissions
+      - name: Auto-Detect Project Folder & Build
         run: |
+          TARGET_DIR=$(find . -maxdepth 3 -name "settings.gradle" -o -name "build.gradle" | head -n 1 | xargs dirname)
+          echo "Folder proyek ditemukan di: $TARGET_DIR"
+          cd "$TARGET_DIR"
+          
           if [ ! -f "gradlew" ]; then
             gradle wrapper
           fi
           chmod +x gradlew
-
-      - name: Build APK with Gradle
-        run: ./gradlew assembleRelease --stacktrace
+          ./gradlew assembleRelease --stacktrace
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
