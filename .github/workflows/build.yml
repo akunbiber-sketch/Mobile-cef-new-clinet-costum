@@ -27,19 +27,14 @@ jobs:
           wget -q --show-progress -O project.zip "https://files.catbox.moe/qoxn35.zip"
           unzip -q project.zip -d extracted_project
 
-      - name: Auto Fix Missing google-services.json
+      - name: Auto Fix google-services.json
         run: |
           APP_DIR=$(find extracted_project -name "build.gradle" | grep "/app" | head -n 1 | xargs dirname)
           if [ -n "$APP_DIR" ] && [ ! -f "$APP_DIR/google-services.json" ]; then
-            cat <<EOF > "$APP_DIR/google-services.json"
-            {
-              "project_info": { "project_number": "123456789", "project_id": "dummy", "storage_bucket": "dummy.appspot.com" },
-              "client": [{ "client_info": { "mobilesdk_app_id": "1:123456789:android:123456", "android_client_info": { "package_name": "ro.alynsampmobile.launcher" } }, "api_key": [{ "current_key": "dummy" }] }]
-            }
-EOF
+            echo '{"project_info":{"project_number":"123456789","project_id":"dummy","storage_bucket":"dummy.appspot.com"},"client":[{"client_info":{"mobilesdk_app_id":"1:123456789:android:123456","android_client_info":{"package_name":"ro.alynsampmobile.launcher"}},"api_key":[{"current_key":"dummy"}]}]}' > "$APP_DIR/google-services.json"
           fi
 
-      - name: Build APK (Debug Mode)
+      - name: Build APK
         run: |
           TARGET_DIR=$(find extracted_project -name "settings.gradle" | head -n 1 | xargs dirname)
           cd "$TARGET_DIR"
@@ -48,7 +43,10 @@ EOF
           gradle wrapper --gradle-version 8.10.2
           chmod +x gradlew
 
-          ./gradlew assembleDebug --stacktrace
+          export ANDROID_NDK_HOME=$ANDROID_HOME/ndk/25.1.8937393
+          export ANDROID_NDK_ROOT=$ANDROID_HOME/ndk/25.1.8937393
+
+          ./gradlew assembleDebug --no-daemon
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
