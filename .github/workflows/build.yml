@@ -1,20 +1,13 @@
-name: Build SA-MP Android APK
+name: Build SA-MP APK from Catbox
 
 on:
-  push:
-    branches: [ "main", "master" ]
-  pull_request:
-    branches: [ "main", "master" ]
-  workflow_dispatch:
+  workflow_dispatch: # Ini biar lu bisa klik tombol "Run workflow" manual di GitHub
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -28,20 +21,35 @@ jobs:
         run: |
           ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager --install "ndk;25.1.8937393" "cmake;3.22.1"
 
-      - name: Auto-Detect Project Folder & Build
+      - name: Sedot Source Code dari Catbox
         run: |
-          TARGET_DIR=$(find . -maxdepth 3 -name "settings.gradle" -o -name "build.gradle" | head -n 1 | xargs dirname)
-          echo "Folder proyek ditemukan di: $TARGET_DIR"
+          echo "Mulai download file 98MB dari Catbox..."
+          wget -q --show-progress -O project.zip "https://files.catbox.moe/qoxn35.zip"
+
+      - name: Ekstrak File ZIP
+        run: |
+          unzip -q project.zip -d extracted_project
+          echo "Beres diekstrak!"
+
+      - name: Build APK Otomatis
+        run: |
+          # Nyari folder proyeknya di dalam hasil ekstrakan
+          TARGET_DIR=$(find extracted_project -name "build.gradle" | head -n 1 | xargs dirname)
+          echo "Masuk ke folder: $TARGET_DIR"
           cd "$TARGET_DIR"
           
+          # Bikin Gradle Wrapper kalau lu lupa masukin
           if [ ! -f "gradlew" ]; then
             gradle wrapper
           fi
+          
+          # Kasih izin eksekusi dan gas Build
           chmod +x gradlew
           ./gradlew assembleRelease --stacktrace
 
-      - name: Upload APK Artifact
+      - name: Upload APK Hasil Build
         uses: actions/upload-artifact@v4
         with:
           name: alyn_sampmobile-APK
-          path: "**/build/outputs/apk/release/*.apk"
+          # Nyari file APK-nya otomatis
+          path: "extracted_project/**/build/outputs/apk/release/*.apk"
