@@ -1,7 +1,7 @@
 name: Build SA-MP APK from Catbox
 
 on:
-  workflow_dispatch: # Ini biar lu bisa klik tombol "Run workflow" manual di GitHub
+  workflow_dispatch:
 
 jobs:
   build:
@@ -17,39 +17,33 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Install NDK 25.1.8937393
+      - name: Accept Licenses & Install NDK
         run: |
+          yes | ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager --licenses || true
           ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager --install "ndk;25.1.8937393" "cmake;3.22.1"
 
-      - name: Sedot Source Code dari Catbox
+      - name: Download & Extract from Catbox
         run: |
-          echo "Mulai download file 98MB dari Catbox..."
           wget -q --show-progress -O project.zip "https://files.catbox.moe/qoxn35.zip"
-
-      - name: Ekstrak File ZIP
-        run: |
           unzip -q project.zip -d extracted_project
-          echo "Beres diekstrak!"
 
-      - name: Build APK Otomatis
+      - name: Build APK
         run: |
-          # Nyari folder proyeknya di dalam hasil ekstrakan
-          TARGET_DIR=$(find extracted_project -name "build.gradle" | head -n 1 | xargs dirname)
-          echo "Masuk ke folder: $TARGET_DIR"
+          # Mencari lokasi spesifik settings.gradle (Root Folder)
+          TARGET_DIR=$(find extracted_project -name "settings.gradle" | head -n 1 | xargs dirname)
+          echo "Root project berada di: $TARGET_DIR"
           cd "$TARGET_DIR"
-          
-          # Bikin Gradle Wrapper kalau lu lupa masukin
+
+          # Paksa buat wrapper versi 8.7 yang stabil untuk Android targetSdk 34
           if [ ! -f "gradlew" ]; then
-            gradle wrapper
+            gradle wrapper --gradle-version 8.7
           fi
-          
-          # Kasih izin eksekusi dan gas Build
+
           chmod +x gradlew
           ./gradlew assembleRelease --stacktrace
 
-      - name: Upload APK Hasil Build
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: alyn_sampmobile-APK
-          # Nyari file APK-nya otomatis
           path: "extracted_project/**/build/outputs/apk/release/*.apk"
