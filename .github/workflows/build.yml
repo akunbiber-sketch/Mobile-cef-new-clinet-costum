@@ -21,18 +21,19 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Android SDK & NDK
+      - name: Setup Android SDK
         uses: android-actions/setup-android@v3
-        with:
-          cmdline-tools-version: 9477386
-          accept-android-sdk-licenses: true
 
       - name: Install NDK 25.1.8937393
         run: |
           ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager --install "ndk;25.1.8937393" "cmake;3.22.1"
 
-      - name: Make Gradle executable
-        run: chmod +x gradlew
+      - name: Check, Generate Wrapper & Fix Permissions
+        run: |
+          if [ ! -f "gradlew" ]; then
+            gradle wrapper
+          fi
+          chmod +x gradlew
 
       - name: Build APK with Gradle
         run: ./gradlew assembleRelease --stacktrace
@@ -41,5 +42,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: alyn_sampmobile-APK
-          path: app/build/outputs/apk/release/alyn_sampmobile.apk
-          
+          path: "**/build/outputs/apk/release/*.apk"
